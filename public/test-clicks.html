@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>DIE click test</title>
+</head>
+<body>
+  <header><h1>DIE click test</h1></header>
+  <main>
+    <p>Open the browser console before clicking.</p>
+
+    <nav aria-label="Test links">
+      <ul>
+        <li><a href="/health" target="_blank">Relative internal link</a></li>
+        <li><a href="https://labs.diainspace.com/" target="_blank" rel="noopener">Registered domain</a></li>
+        <li><a href="https://example.org/" target="_blank" rel="noopener">External domain</a></li>
+        <li><a href="#result">Same-page anchor</a></li>
+      </ul>
+    </nav>
+
+    <pre id="result">Click details will appear here.</pre>
+  </main>
+
+  <script type="module">
+    import { installClickTracker } from '/tracker/click-listener.js';
+
+    installClickTracker({
+      domains: ['die.test', 'labs.diainspace.com'],
+      onClick(event) {
+        console.log('DIE click:', event);
+        document.querySelector('#result').textContent =
+          JSON.stringify(event, null, 2);
+      },
+    });
+  </script>
+
+  <footer>
+    <a href="#result">Footer test</a>
+    <a href="#result" data-analytics-place="featured" data-analytics-scope="external" data-analytics-name="Featured Labs">Override test</a>
+  </footer>
+
+</body>
+</html>

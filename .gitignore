@@ -1,0 +1,52 @@
+# Dependencies and package-manager caches
+node_modules/
+.pnpm-store/
+.npm/
+
+# Local configuration and secrets; retain safe examples
+.env
+.env.*
+!.env.example
+!.env.*.example
+secrets/
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Generated builds and test output
+dist/
+build/
+.next/
+out/
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# Logs and runtime files
+logs/
+*.log
+*.pid
+*.pid.lock
+
+# Local data and backups
+backups/
+*.dump
+*.sql.gz
+*.sqlite
+*.sqlite3
+
+# Temporary files and editor-local settings
+tmp/
+temp/
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# macOS metadata
+.DS_Store
+.AppleDouble
+._*
