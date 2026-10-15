@@ -12,11 +12,12 @@ try {
   process.exit(1);
 }
 const isDevelopment = process.env.NODE_ENV === 'development';
-const ingestion = isDevelopment ? createIngestion({
-  registryFile: new URL('../config/domains.local.json', import.meta.url),
-}) : undefined;
+const registryFile = process.env.DIE_DOMAIN_REGISTRY_FILE?.trim() ||
+  (isDevelopment ? new URL('../config/domains.local.json', import.meta.url) : undefined);
+const ingestion = registryFile ? createIngestion({ registryFile }) : undefined;
 const server = createApp({
   ingestion,
+  enableTracker: Boolean(ingestion),
   checkDatabase: () => database.check(),
   enableLocalPreview: isDevelopment,
 });

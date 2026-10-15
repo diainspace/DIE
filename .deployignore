@@ -1,0 +1,60 @@
+# macOS metadata
+.DS_Store
+
+# Git files
+.git/
+.gitignore
+
+# Deployment controls stay local
+.deployignore
+
+# Private/local environment and credentials
+.env
+.env.*
+secrets/
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Install locked dependencies on the target rather than copying Mac binaries
+node_modules/
+.pnpm-store/
+.npm/
+
+# Local tests, previews, and test registry
+/test/
+/tests/
+/public/test-clicks.html
+/config/domains.local.json
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Generated caches and temporary files
+__pycache__/
+*.pyc
+*.pyo
+*.tsbuildinfo
+.next/
+tmp/
+temp/
+*.swp
+*.swo
+*.before-repair-*.bak
+
+# Logs, runtime files, and database backups
+logs/
+*.log
+*.pid
+*.pid.lock
+backups/
+*.dump
+*.sql.gz
+*.sqlite
+*.sqlite3
+
+# Editor-local settings
+.idea/
+.vscode/

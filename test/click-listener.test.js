@@ -60,3 +60,30 @@ test('a click captures markup overrides and URL attribution', t => {
   assert.equal(click.defaultPrevented, false);
   assert.equal(link.getAttribute('href'), '#result');
 });
+
+test('click names use markup fallbacks including the icon-only GitHub link', t => {
+  const examples = [
+    ['<a href="#result" aria-label="GitHub" title="GitHub"><svg></svg></a>', 'GitHub'],
+    ['<a href="#result" data-analytics-name=" Explicit " aria-label="Accessible" title="Tooltip">Visible</a>', 'Explicit'],
+    ['<a href="#result" data-analytics-name="  " aria-label=" Accessible " title="Tooltip">Visible</a>', 'Accessible'],
+    ['<a href="#result" aria-label="  " title="Tooltip"> Visible <img alt="Picture"></a>', 'Visible'],
+    ['<a href="#result" title="Tooltip"><img alt=" Picture "></a>', 'Picture'],
+    ['<a href="#result" title="Tooltip"><img alt=""><img alt=" Second image "></a>', 'Second image'],
+    ['<a href="#result" title=" Tooltip "><svg></svg></a>', 'Tooltip'],
+    ['<a href="#result" title=" Tooltip "><img alt="  "></a>', 'Tooltip'],
+    ['<a href="#result" data-analytics-name=" " aria-label=" " title=" "><svg></svg></a>', ''],
+  ];
+  const dom = new JSDOM(examples.map(([html]) => html).join(''), { url: 'https://die.test/' });
+  const originals = { window: globalThis.window, document: globalThis.document, Element: globalThis.Element };
+  Object.assign(globalThis, { window: dom.window, document: dom.window.document, Element: dom.window.Element });
+  const events = [];
+  const stop = installClickTracker({ domains: ['die.test'], onClick: event => events.push(event) });
+  t.after(() => { stop(); Object.assign(globalThis, originals); dom.window.close(); });
+  document.querySelectorAll('a').forEach((link, index) => {
+    const click = new window.MouseEvent('click', { bubbles: true, cancelable: true });
+    link.dispatchEvent(click);
+    assert.equal(events[index].name, examples[index][1], `fallback example ${index + 1}`);
+    assert.equal(click.defaultPrevented, false);
+  });
+  assert.equal(events.length, examples.length);
+});

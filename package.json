@@ -9,7 +9,8 @@
   },
   "scripts": {
     "start": "node --env-file=.env src/server.js",
-    "test": "node --test"
+    "test": "node --test && npm run test:registry",
+    "test:registry": "python3 -m unittest discover -s test -p 'test_*.py' -v"
   },
   "dependencies": {
     "pg": "8.23.1"

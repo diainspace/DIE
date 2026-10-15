@@ -9,8 +9,13 @@ const previewFiles = new Map([
   ['/tracker/infer-place.js', [new URL('./tracker/infer-place.js', import.meta.url), 'text/javascript; charset=utf-8',]],
 ]); 
 
+const trackerFiles = new Map([
+  ['/tracker.js', [new URL('./browser-tracker.js', import.meta.url), 'text/javascript; charset=utf-8']],
+  ...[...previewFiles].filter(([path]) => path.startsWith('/tracker/')),
+]);
+
 // Liveness is independent of database readiness.
-export function createApp({ ingestion, enableLocalPreview = false, checkDatabase = async () => { throw new Error('Not configured'); } } = {}) {
+export function createApp({ ingestion, enableTracker = false, enableLocalPreview = false, checkDatabase = async () => { throw new Error('Not configured'); } } = {}) {
   return createServer(async (request, response) => {
     const path = request.url?.split('?')[0];
     let statusCode = 200;
@@ -20,17 +25,52 @@ export function createApp({ ingestion, enableLocalPreview = false, checkDatabase
       const expectedMethod = path === '/api/click' ? 'POST' : 'GET';
       let result;
       try {
+        const origin = request.headers.origin;
+        let crossOrigin = false;
+        if (origin) {
+          let parsed;
+          try { parsed = new URL(origin); } catch {
+            throw new IngestionError(403, 'origin_not_allowed');
+          }
+          if (!['http:', 'https:'].includes(parsed.protocol) || parsed.origin !== origin) {
+            throw new IngestionError(403, 'origin_not_allowed');
+          }
+          crossOrigin = parsed.host !== request.headers.host;
+          if (crossOrigin && !(await ingestion.domains()).has(parsed.hostname)) {
+            throw new IngestionError(403, 'origin_not_allowed');
+          }
+          response.setHeader('Access-Control-Allow-Origin', origin);
+        }
+        response.setHeader('Vary', 'Origin');
+        if (request.method === 'OPTIONS' && origin) {
+          const headers = (request.headers['access-control-request-headers'] || '')
+            .toLowerCase().split(',').map(value => value.trim()).filter(Boolean);
+          if (request.headers['access-control-request-method'] !== expectedMethod ||
+              headers.some(header => header !== 'content-type')) {
+            throw new IngestionError(403, 'preflight_not_allowed');
+          }
+          response.writeHead(204, {
+            'Access-Control-Allow-Methods': expectedMethod,
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Max-Age': '300',
+            'Cache-Control': 'no-store',
+          });
+          response.end();
+          return;
+        }
         if (request.method !== expectedMethod) {
-          response.setHeader('Allow', expectedMethod);
+          response.setHeader('Allow', `${expectedMethod}, OPTIONS`);
           throw new IngestionError(405, 'method_not_allowed');
         }
         if (path === '/api/click') {
-          // Browser submissions use this site's endpoint; no cross-origin gateway yet.
-          if (request.headers.origin &&
-              new URL(request.headers.origin).host !== request.headers.host) {
-            throw new IngestionError(403, 'origin_not_allowed');
-          }
           const click = await readClickBody(request);
+          if (crossOrigin) {
+            let pageOrigin;
+            try { pageOrigin = new URL(click?.url).origin; } catch {
+              throw new IngestionError(400, 'invalid_url');
+            }
+            if (pageOrigin !== origin) throw new IngestionError(403, 'origin_mismatch');
+          }
           result = await ingestion.ingest(click, request.headers['user-agent']);
         } else {
           result = { domains: [...await ingestion.domains()] };
@@ -50,12 +90,14 @@ export function createApp({ ingestion, enableLocalPreview = false, checkDatabase
       return;
     }
 
-    const preview = enableLocalPreview ? previewFiles.get(path) : undefined;
+    const productionAsset = enableTracker ? trackerFiles.get(path) : undefined;
+    const preview = productionAsset || (enableLocalPreview ? previewFiles.get(path) : undefined);
     if (preview && ['GET', 'HEAD'].includes(request.method)) {
       try {
         const payload = await readFile(preview[0]);
         response.writeHead(200, {
           'Content-Type': preview[1],
+          ...(productionAsset ? { 'Access-Control-Allow-Origin': '*' } : {}),
           'Content-Length': payload.length,
           'Cache-Control': 'no-store',
           'X-Content-Type-Options': 'nosniff',

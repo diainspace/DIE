@@ -50,3 +50,8 @@ temp/
 .DS_Store
 .AppleDouble
 ._*
+
+# Python caches and local repair copies
+__pycache__/
+*.py[cod]
+*.before-repair-*.bak
