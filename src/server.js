@@ -1,5 +1,6 @@
 import { createApp } from './app.js';
 import { createDatabase } from './database.js';
+import { createIngestion } from './ingestion.js';
 
 const host = '127.0.0.1';
 const port = 3002;
@@ -10,9 +11,14 @@ try {
   console.error('DIE_DATABASE_URL must be configured in the private environment.');
   process.exit(1);
 }
+const isDevelopment = process.env.NODE_ENV === 'development';
+const ingestion = isDevelopment ? createIngestion({
+  registryFile: new URL('../config/domains.local.json', import.meta.url),
+}) : undefined;
 const server = createApp({
+  ingestion,
   checkDatabase: () => database.check(),
-  enableLocalPreview: process.env.NODE_ENV === 'development',
+  enableLocalPreview: isDevelopment,
 });
 
 server.on('error', async error => {

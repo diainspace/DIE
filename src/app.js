@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
+import { IngestionError, readClickBody } from './ingestion.js';
 
 const previewFiles = new Map([
   ['/test-clicks', [new URL('../public/test-clicks.html', import.meta.url), 'text/html; charset=utf-8']],
@@ -9,11 +10,45 @@ const previewFiles = new Map([
 ]); 
 
 // Liveness is independent of database readiness.
-export function createApp({ enableLocalPreview = false, checkDatabase = async () => { throw new Error('Not configured'); } } = {}) {
+export function createApp({ ingestion, enableLocalPreview = false, checkDatabase = async () => { throw new Error('Not configured'); } } = {}) {
   return createServer(async (request, response) => {
     const path = request.url?.split('?')[0];
     let statusCode = 200;
     let body = { service: 'die-interface', status: 'ok' };
+
+    if (ingestion && ['/api/click', '/api/domains'].includes(path)) {
+      const expectedMethod = path === '/api/click' ? 'POST' : 'GET';
+      let result;
+      try {
+        if (request.method !== expectedMethod) {
+          response.setHeader('Allow', expectedMethod);
+          throw new IngestionError(405, 'method_not_allowed');
+        }
+        if (path === '/api/click') {
+          // Browser submissions use this site's endpoint; no cross-origin gateway yet.
+          if (request.headers.origin &&
+              new URL(request.headers.origin).host !== request.headers.host) {
+            throw new IngestionError(403, 'origin_not_allowed');
+          }
+          const click = await readClickBody(request);
+          result = await ingestion.ingest(click, request.headers['user-agent']);
+        } else {
+          result = { domains: [...await ingestion.domains()] };
+        }
+      } catch (error) {
+        statusCode = error instanceof IngestionError ? error.status : 500;
+        result = { error: error instanceof IngestionError ? error.message : 'ingestion_failed' };
+      }
+      const payload = JSON.stringify(result);
+      response.writeHead(statusCode, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Length': Buffer.byteLength(payload),
+        'Cache-Control': 'no-store',
+        'X-Content-Type-Options': 'nosniff',
+      });
+      response.end(request.method === 'HEAD' ? undefined : payload);
+      return;
+    }
 
     const preview = enableLocalPreview ? previewFiles.get(path) : undefined;
     if (preview && ['GET', 'HEAD'].includes(request.method)) {

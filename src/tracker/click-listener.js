@@ -30,6 +30,7 @@ export function installClickTracker({ domains, onClick = console.log }) {
       place: inferPlace(link),
       source: page.searchParams.get('source') || page.searchParams.get('utm_source') || null,
       campaign: page.searchParams.get('campaign') || page.searchParams.get('utm_campaign') || null,
+      url: page.href,
     });
   }
 

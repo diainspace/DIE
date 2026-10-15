@@ -7,7 +7,8 @@
 <body>
   <header><h1>DIE click test</h1></header>
   <main>
-    <p>Open the browser console before clicking.</p>
+    <p>Clicks on this local test page are sent through DIE to local Umami.</p>
+    <p id="delivery" role="status">Loading test registry…</p>
 
     <nav aria-label="Test links">
       <ul>
@@ -24,12 +25,35 @@
   <script type="module">
     import { installClickTracker } from '/tracker/click-listener.js';
 
+    const registryResponse = await fetch('/api/domains');
+    if (!registryResponse.ok) throw new Error('Test registry could not be loaded');
+    const { domains } = await registryResponse.json();
+    const delivery = document.querySelector('#delivery');
+    delivery.textContent = 'Ready to capture a test click.';
+
     installClickTracker({
-      domains: ['die.test', 'labs.diainspace.com'],
+      domains,
       onClick(event) {
         console.log('DIE click:', event);
         document.querySelector('#result').textContent =
           JSON.stringify(event, null, 2);
+        delivery.textContent = 'Sending test click…';
+        // Do not await or prevent navigation. keepalive allows completion on page exit.
+        fetch('/api/click', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(event),
+          keepalive: true,
+        }).then(async response => {
+          const result = await response.json();
+          if (!response.ok || !result.accepted) throw new Error('Click was not accepted');
+          delivery.textContent = 'Accepted by local Umami.';
+          console.log('DIE delivery:', result);
+        }).catch(() => {
+          // Diagnostics belong to this development page, not a production visitor UI.
+          delivery.textContent = 'Test delivery failed; navigation was not blocked.';
+          console.warn('DIE test click could not be delivered.');
+        });
       },
     });
   </script>
