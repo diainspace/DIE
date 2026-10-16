@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clicks · DIE</title><link rel="stylesheet" href="/report.css"><script src="/report.js" defer></script>
+</head>
+<body>
+  <header class="top"><a class="brand" href="/report">DIE<span>Analytics</span></a><span id="data-badge" class="badge">Mock data</span></header>
+  <main>
+    <div class="intro subject-view"><p class="eyebrow">CLICK REPORT · VIEWING</p><h1 id="subject-title">All websites</h1><p id="subject-context">Mock data · Last 30 days</p></div>
+    <aside id="mock-notice" class="mock-notice"><strong>Mock data — all activity here is fictional.</strong><span id="mock-count-note">20,000 synthetic clicks across 180 days, including comparison history. Real analytics are untouched.</span></aside>
+    <form id="filters" class="filters report-filters">
+      <div class="primary-filters">
+        <label>Data<select id="dataset"><option value="mock" selected>Mock data</option><option value="local">Local collected data</option></select></label>
+        <label class="subject-label">Subject / website<select id="domain"><option value="all">All mock websites</option></select></label>
+        <label>Period<select id="period"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option></select></label>
+        <button id="refresh" type="submit">Apply / refresh</button>
+      </div>
+      <p id="selection-hint" class="selection-hint" role="status" hidden></p>
+      <details id="drilldown" class="drilldown"><summary>Narrow the view <span id="filter-count" class="filter-count"></span></summary>
+      <fieldset id="filter-fields"><legend class="sr-only">Additional filters</legend><p id="filter-help" class="muted">Combine any fields, then apply. Chart labels can also filter the view.</p><div class="facet-grid">
+        <label>Source<select id="filter-source"><option value="">All sources</option></select></label>
+        <label>Campaign<select id="filter-campaign"><option value="">All campaigns</option></select></label>
+        <label>Origin<select id="filter-origin"><option value="">All origins</option></select></label>
+        <label>Path<select id="filter-path"><option value="">All paths</option></select></label>
+        <label>Placement<select id="filter-place"><option value="">All placements</option></select></label>
+        <label>Destination<select id="filter-dest"><option value="">All destinations</option></select></label>
+        <label>Scope<select id="filter-scope"><option value="">All scopes</option></select></label>
+      </div></fieldset>
+      <div class="filter-actions"><button id="clear" type="button" class="secondary">Clear filters</button></div>
+      </details>
+    </form>
+    <div id="active-filters" class="chips" aria-label="Applied filters"></div>
+    <p id="status" role="status" aria-live="polite">Loading mock clicks…</p><p id="error" role="alert" hidden></p>
+    <section id="report" hidden aria-label="Click report">
+      <div class="report-tools"><button id="export-clicks" type="button" class="secondary">Export clicks (CSV)</button><span id="export-status" role="status" class="muted"></span></div>
+      <div class="metrics"><section class="metric"><h2>Link clicks overall</h2><p id="total">0</p></section><section class="metric"><h2 id="loaded-label">Clicks in this view</h2><p id="loaded">0</p></section><section class="metric"><h2 id="sources-label">Sources bringing clicks</h2><p id="sources-count">0</p></section><section class="metric"><h2>Sites with clicks</h2><p id="website-count">0</p></section></div>
+      <p id="scope-note" class="muted"></p>
+      <section id="trend-panel" class="panel trend-panel" hidden aria-labelledby="trend-heading">
+        <div class="section-head"><h2 id="trend-heading">Is interest growing?</h2><span class="muted">Link clicks over time</span></div>
+        <p id="trend-change" class="trend-change"></p>
+        <p id="trend-periods" class="muted"></p>
+        <div class="trend-legend"><span><i class="legend-current" aria-hidden="true"></i>Selected period</span><span id="previous-legend"><i class="legend-previous" aria-hidden="true"></i>Previous period</span></div>
+        <svg id="trend-chart" viewBox="0 0 900 255" role="img" aria-labelledby="trend-heading trend-description"></svg>
+        <p id="trend-description" class="muted"></p>
+        <div id="trend-values" class="sr-only"></div>
+      </section>
+      <section id="contributions-panel" class="contributions-panel" hidden aria-labelledby="contributions-heading">
+        <h2 id="contributions-heading">What contributed to the change?</h2>
+        <p id="contributions-summary" class="contributions-summary"></p>
+        <p class="muted">Sources, campaigns, and destinations are different views of the same clicks. Select a group to focus the report.</p>
+        <div class="contributions-grid">
+          <section class="panel"><h3>Which sources changed?</h3><div id="source-changes"></div></section>
+          <section class="panel"><h3>Which campaigns changed?</h3><div id="campaign-changes"></div></section>
+          <section class="panel"><h3>Which destinations changed?</h3><div id="dest-changes"></div></section>
+        </div>
+      </section>
+      <div class="charts"><section class="panel"><h2>What brought people here?</h2><p class="muted">Sources such as Facebook, search, and newsletters</p><ul id="source-chart" class="bars"></ul></section><section class="panel"><h2>Which campaigns brought clicks?</h2><p class="muted">Compare your promotions</p><ul id="campaign-chart" class="bars"></ul></section><section class="panel"><h2>Where on the page did people click?</h2><p class="muted">See which parts of the page attract action</p><ul id="place-chart" class="bars"></ul></section><section class="panel"><h2>What did people choose to explore?</h2><p class="muted">Link destinations, not confirmed visits or plays</p><ul id="dest-chart" class="bars"></ul></section></div>
+
+    </section>
+  </main><footer class="foot">DIE · Local preview · No automatic polling</footer>
+</body>
+</html>
