@@ -1,6 +1,7 @@
 import { createApp } from './app.js';
 import { createDatabase } from './database.js';
 import { createIngestion } from './ingestion.js';
+import { createClickReader } from './reporting/read-clicks.js';
 
 const host = '127.0.0.1';
 const port = 3002;
@@ -15,8 +16,25 @@ const isDevelopment = process.env.NODE_ENV === 'development';
 const registryFile = process.env.DIE_DOMAIN_REGISTRY_FILE?.trim() ||
   (isDevelopment ? new URL('../config/domains.local.json', import.meta.url) : undefined);
 const ingestion = registryFile ? createIngestion({ registryFile }) : undefined;
+let localReporting;
+let mockReporting;
+if (isDevelopment) {
+  try {
+    const base = new URL(process.env.UMAMI_BASE_URL);
+    if (!['umami.test', 'localhost', '127.0.0.1', '[::1]'].includes(base.hostname)) {
+      throw new Error('Not a local Umami endpoint');
+    }
+    localReporting = createClickReader();
+    const { createMockClickReader } = await import('./reporting/mock-clicks.js');
+    mockReporting = createMockClickReader();
+  } catch {
+    console.warn('Local reporting requires a local UMAMI_BASE_URL.');
+  }
+}
 const server = createApp({
   ingestion,
+  localReporting,
+  mockReporting,
   enableTracker: Boolean(ingestion),
   checkDatabase: () => database.check(),
   enableLocalPreview: isDevelopment,

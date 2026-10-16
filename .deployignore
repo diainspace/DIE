@@ -58,3 +58,7 @@ backups/
 # Editor-local settings
 .idea/
 .vscode/
+/public/report.html
+/public/report.js
+/public/report.css
+/src/reporting/mock-clicks.js

@@ -1,6 +1,7 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { IngestionError, readClickBody } from './ingestion.js';
+import { serveLocalReport } from './reporting/local-report.js';
 
 const previewFiles = new Map([
   ['/test-clicks', [new URL('../public/test-clicks.html', import.meta.url), 'text/html; charset=utf-8']],
@@ -14,12 +15,23 @@ const trackerFiles = new Map([
   ...[...previewFiles].filter(([path]) => path.startsWith('/tracker/')),
 ]);
 
+const reportFiles = new Map([
+  ['/report', [new URL('../public/report.html', import.meta.url), 'text/html; charset=utf-8']],
+  ['/report.js', [new URL('../public/report.js', import.meta.url), 'text/javascript; charset=utf-8']],
+  ['/report.css', [new URL('../public/report.css', import.meta.url), 'text/css; charset=utf-8']],
+]);
+
 // Liveness is independent of database readiness.
-export function createApp({ ingestion, enableTracker = false, enableLocalPreview = false, checkDatabase = async () => { throw new Error('Not configured'); } } = {}) {
+export function createApp({ ingestion, localReporting, mockReporting, enableTracker = false, enableLocalPreview = false, checkDatabase = async () => { throw new Error('Not configured'); } } = {}) {
   return createServer(async (request, response) => {
     const path = request.url?.split('?')[0];
     let statusCode = 200;
     let body = { service: 'die-interface', status: 'ok' };
+
+    if (enableLocalPreview && localReporting && path === '/reports/clicks') {
+      await serveLocalReport(request, response, localReporting, mockReporting);
+      return;
+    }
 
     if (ingestion && ['/api/click', '/api/domains'].includes(path)) {
       const expectedMethod = path === '/api/click' ? 'POST' : 'GET';
@@ -91,12 +103,14 @@ export function createApp({ ingestion, enableTracker = false, enableLocalPreview
     }
 
     const productionAsset = enableTracker ? trackerFiles.get(path) : undefined;
-    const preview = productionAsset || (enableLocalPreview ? previewFiles.get(path) : undefined);
+    const reportAsset = enableLocalPreview && localReporting ? reportFiles.get(path) : undefined;
+    const preview = productionAsset || reportAsset || (enableLocalPreview ? previewFiles.get(path) : undefined);
     if (preview && ['GET', 'HEAD'].includes(request.method)) {
       try {
         const payload = await readFile(preview[0]);
         response.writeHead(200, {
           'Content-Type': preview[1],
+          ...(reportAsset ? { 'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'self'" } : {}),
           ...(productionAsset ? { 'Access-Control-Allow-Origin': '*' } : {}),
           'Content-Length': payload.length,
           'Cache-Control': 'no-store',
